@@ -6,13 +6,17 @@
 Const $editorPath = "%SystemRoot%\system32\NOTEPAD.EXE"
 Const $targetWindowClass = "[CLASS:Notepad]"
 
+; von Funktionen als Seiteneffekt änderbare Werte
+$userRequestedNewEditor = False
+
 Func OpenNewEditor()
-   Run(_WinAPI_ExpandEnvironmentStrings($editorPath))
-   Sleep(2000)
+    $userRequestedNewEditor = True
+    Run(_WinAPI_ExpandEnvironmentStrings($editorPath))
+    Sleep(2000)
 EndFunc
 
 Func GetWindowList()
-   Return WinList($targetWindowClass)
+    Return WinList($targetWindowClass)
 EndFunc
 
 ; hole oder öffne Notepad Fenster
@@ -21,24 +25,34 @@ Do
 	If $windowlist[0][0] = 0 Then
         $hNotepad = 0
         $msgBoxResult = MsgBox(BitOR($MB_CANCELTRYCONTINUE, $MB_ICONERROR), _
-		    "WatchClipBoard - Error", "Editor not found for window class: '" & $targetWindowClass & "'" & @CRLF & _
-			"(Press 'Continue' to open a new text editor window)")
+		    "WatchClipBoard - Error", "No editor window found!" & @CRLF & @CRLF & _
+			"  CANCEL" & Chr(9) & Chr(9) & "exit" & @CRLF & _
+			"  RETRY" & Chr(9) & Chr(9) & "try again" & @CRLF & _
+			"  CONTINUE" & Chr(9) & "open a new text editor window")
 		Switch $msgBoxResult
-        Case 11   ; Weiter
+          Case 11   ; Weiter
 			OpenNewEditor()
 			ContinueCase
-		Case 10   ; Wiederholen
-		Case Else ; Abbrechen/Dialog-Schließen (2) etc.
+		  Case 10   ; Wiederholen
+		  Case Else ; Abbrechen/Dialog-Schließen (2) etc.
             Exit 1
         EndSwitch
 	Else
-		$allWindowTitles = ""
-		For $i = 1 To $windowlist[0][0]
-		   $allWindowTitles = $allWindowTitles & $i & "  " & $windowList[$i][0] & @CRLF
-		Next
-		$j = 1 * InputBox("WatchClipBoard - Choice required", "These editor windows have been found:" & _
-			@CRLF & @CRLF & $allWindowTitles & @CRLF & @CRLF & "Enter the number of the editor to use," & @CRLF & _
-			"or 0 for a new editor", "0", "", -1, 250)
+        If $windowlist[0][0] = 1 And ($userRequestedNewEditor Or $windowList[1][0] = "Unbenannt - Editor") Then
+            $j = 1
+        Else
+            $allWindowTitles = ""
+		    For $i = 1 To $windowlist[0][0]
+		        $allWindowTitles = $allWindowTitles & $i & "  " & $windowList[$i][0] & @CRLF
+		    Next
+		    $inputBoxResult = InputBox("WatchClipBoard - Choice required", "These editor windows have been found:" & _
+			    @CRLF & @CRLF & $allWindowTitles & @CRLF & @CRLF & "Enter the number of the editor to use," & @CRLF & _
+			    "or 0 for a new editor", "0", "", -1, 250)
+            If @error Then
+                Exit 1
+            EndIf
+            $j = 1 * $inputBoxResult
+        EndIf
 		If $j = 0 Then
 		    OpenNewEditor()
 			Do
@@ -78,7 +92,10 @@ While True
     $clipContents = ClipGet()
     If Not @error And $clipContents <> $lastClipContents Then
         $hCurrentWin = WinGetHandle("")
-        WinActivate($hNotepad)
+        If WinActivate($hNotepad) = 0 Then
+            MsgBox($MB_ICONERROR, "WatchClipBoard - Error", "Editor window no more available!" & @CRLF & "Please restart.")
+            Exit 1
+        EndIf
         Sleep(300)
 		If Not StringRegExp($clipContents, "^\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d") Then
             Send(StringReplace(_Date_Time_SystemTimeToDateTimeStr(_Date_Time_GetLocalTime(), 1), "/", "-") & " -")
