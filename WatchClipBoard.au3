@@ -2,7 +2,7 @@
 #include <Date.au3>
 #include <WinAPI.au3>
 
-; Konstanten
+; Konstanten TODO bei den bestehenden (offenen) Fenstern deutlich mehr akzeptieren als nur Notepad ("Editor"), und "frisches" Notepad anders erkennen (CLASS ermitteln?)
 Const $editorPath = "%SystemRoot%\system32\NOTEPAD.EXE"
 Const $targetWindowClass = "[CLASS:Notepad]"
 
