@@ -2,9 +2,9 @@
 #include <Date.au3>
 #include <WinAPI.au3>
 
-; Konstanten TODO bei den bestehenden (offenen) Fenstern deutlich mehr akzeptieren als nur Notepad ("Editor"), und "frisches" Notepad anders erkennen (CLASS ermitteln?)
 Const $editorPath = "%SystemRoot%\system32\NOTEPAD.EXE"
 Const $targetWindowClass = "[CLASS:Notepad]"
+Const $targetWindowClassRE = "[REGEXPCLASS:^((Notepad\+*)|(SunAwtFrame))$]";
 
 ; von Funktionen als Seiteneffekt änderbare Werte
 $userRequestedNewEditor = False
@@ -16,7 +16,7 @@ Func OpenNewEditor()
 EndFunc
 
 Func GetWindowList()
-    Return WinList($targetWindowClass)
+    Return WinList($targetWindowClassRE)
 EndFunc
 
 ; hole oder öffne Notepad Fenster
@@ -30,15 +30,15 @@ Do
 			"  RETRY" & Chr(9) & Chr(9) & "try again" & @CRLF & _
 			"  CONTINUE" & Chr(9) & "open a new text editor window")
 		Switch $msgBoxResult
-          Case 11   ; Weiter
+          Case $IDCONTINUE
 			OpenNewEditor()
 			ContinueCase
-		  Case 10   ; Wiederholen
-		  Case Else ; Abbrechen/Dialog-Schließen (2) etc.
+		  Case $IDTRYAGAIN
+		  Case Else
             Exit 1
         EndSwitch
 	Else
-        If $windowlist[0][0] = 1 And ($userRequestedNewEditor Or $windowList[1][0] = "Unbenannt - Editor") Then
+        If $windowlist[0][0] = 1 And ($userRequestedNewEditor Or _WinAPI_GetClassName($windowList[1][1]) = $targetWindowClass) Then
             $j = 1
         Else
             $allWindowTitles = ""

@@ -1,9 +1,12 @@
 #include <MsgBoxConstants.au3>
+#include <WinAPI.au3>
 
+Const $skipWindowClassNameRE = "^Notepad\+*$";
+Const $skipMessage = "- Skipping Notepad(++) windows -" & @CRLF
+; Frage Benutzer, ob Strg-C gesendet werden soll (anstatt direkt den Titel des Fensters zu verwenden) - nützlich mit Firefox + CopyFixer Add-On!
 $sendCtrlC = False
 $msgBoxResult = MsgBox(BitOR($MB_YESNOCANCEL, $MB_ICONQUESTION), _
-    "AutoCopy", "Send Ctrl-C on window change?" & @CRLF & @CRLF & _
-    "YES/NO (or CANCEL to exit)")
+    "AutoCopy changing window titles", $skipMessage & @CRLF & "Send Ctrl-C on window change?" & @CRLF & @CRLF & "YES/NO (or CANCEL to exit)")
 Switch $msgBoxResult
     Case $IDNO
     Case $IDYES
@@ -11,22 +14,28 @@ Switch $msgBoxResult
     Case Else
         Exit 1
 EndSwitch
-;  10 $IDTRYAGAIN
-;  11 $IDCONTINUE
+
+Func GetActiveWindowInfo()
+    Local $result[3]
+    $windowHandle = WinGetHandle("[active]")
+    $result[0] = WinGetTitle($windowHandle)
+    $result[1] = _WinAPI_GetClassName($windowHandle)
+    $result[2] = $windowHandle
+    Return $result
+EndFunc
 
 ; Hauptschleife
-$lastActiveWindowTitle = WinGetTitle("[active]")
+$lastActiveWindowInfo = GetActiveWindowInfo()
 While True
-    $activeWindowTitle = WinGetTitle("[active]")
-    If Not @error And $activeWindowTitle <> "" And $activeWindowTitle <> "Unbenannt - Editor" And $activeWindowTitle <> $lastActiveWindowTitle Then
-        ;ConsoleWrite("last: " & $lastActiveWindowTitle & @CRLF & "*now: " & $activeWindowTitle & @CRLF & "send: " & $sendCtrlC & @CRLF)
+    $activeWindowInfo = GetActiveWindowInfo()
+    If Not @error And $activeWindowInfo[0] <> "" And Not StringRegExp($activeWindowInfo[1], $skipWindowClassNameRE) And $activeWindowInfo[2] <> $lastActiveWindowInfo[2] Then
         If $sendCtrlC Then
             Send("^c")
             Sleep(500)
         Else
-            ClipPut($activeWindowTitle)
+            ClipPut($activeWindowInfo[0])
         EndIf
-        $lastActiveWindowTitle = $activeWindowTitle
+        $lastActiveWindowInfo = $activeWindowInfo
     EndIf
     Sleep(300)
 WEnd
