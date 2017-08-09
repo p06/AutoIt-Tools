@@ -1,0 +1,37 @@
+<html>
+<head>
+<title>Erinnerung</title>
+<hta:application sysMenu="no" />
+<script type="text/javascript">
+function minutesInput() {
+	return document.getElementById("minutes");
+}
+function nextMessage() {
+	nextMessageInMinutes(minutesInput().value);
+}
+function handleTimeout() {
+	var wScriptShell = new ActiveXObject("WScript.Shell");
+	wScriptShell.Run("cmd /c \"echo Erinnerung & pause\"", 1, true);
+	nextMessage();
+}
+var currentTimeout = null;
+function nextMessageInMinutes(value) {
+	if (currentTimeout != null) {
+		window.clearTimeout(currentTimeout);
+		currentTimeout = null;
+	}
+	currentTimeout = window.setTimeout(handleTimeout, 60000 * value);
+}
+</script>
+</head>
+<body onload="window.resizeTo(170, 150); window.moveTo(0, 0); minutesInput().focus()" bgcolor="#E8E8E8">
+<table>
+<tr>
+<th><font face="sans-serif">Intervall<br>(Minuten)</font></th>
+</tr>
+<tr>
+<td><input id="minutes" size="2"><input type="button" onclick="nextMessage()" value="Setzen"></td>
+</tr>
+</table>
+</body>
+</html>
