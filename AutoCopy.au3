@@ -3,7 +3,9 @@
 
 Const $skipWindowClassNameRE = "^Notepad\+*$";
 Const $skipMessage = "- Skipping Notepad(++) windows -" & @CRLF
-; Frage Benutzer, ob Strg-C gesendet werden soll (anstatt direkt den Titel des Fensters zu verwenden) - nützlich mit Firefox + CopyFixer Add-On!
+
+; Frage Benutzer, ob Strg-C gesendet werden soll (anstatt direkt den Titel des Fensters zu verwenden) - nützlich mit Firefox + CopyFixer Add-On,
+;   weil dann noch die URL dazu ermittelt werden kann!
 $sendCtrlC = False
 $msgBoxResult = MsgBox(BitOR($MB_YESNOCANCEL, $MB_ICONQUESTION), _
     "AutoCopy changing window titles", $skipMessage & @CRLF & "Send Ctrl-C on window change?" & @CRLF & @CRLF & "YES/NO (or CANCEL to exit)")
@@ -28,14 +30,15 @@ EndFunc
 $lastActiveWindowInfo = GetActiveWindowInfo()
 While True
     $activeWindowInfo = GetActiveWindowInfo()
-    If Not @error And $activeWindowInfo[0] <> "" And Not StringRegExp($activeWindowInfo[1], $skipWindowClassNameRE) And $activeWindowInfo[2] <> $lastActiveWindowInfo[2] Then
-        If $sendCtrlC Then
+    If Not @error And $activeWindowInfo[0] <> "" And Not StringRegExp($activeWindowInfo[1], $skipWindowClassNameRE) _
+	   And $activeWindowInfo[2] <> $lastActiveWindowInfo[2] Then ; title of active window has changed (or active window has changed  ;-) )
+         If $sendCtrlC Then
             Send("^c")
             Sleep(500)
-        Else
+         Else
             ClipPut($activeWindowInfo[0])
-        EndIf
-        $lastActiveWindowInfo = $activeWindowInfo
+         EndIf
+         $lastActiveWindowInfo = $activeWindowInfo
     EndIf
     Sleep(300)
 WEnd

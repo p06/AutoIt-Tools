@@ -4,10 +4,11 @@
 
 Const $editorPath = "%SystemRoot%\system32\NOTEPAD.EXE"
 Const $targetWindowClass = "[CLASS:Notepad]"
-Const $targetWindowClassRE = "[REGEXPCLASS:^((Notepad\+*)|(SunAwtFrame))$]";
+Const $targetWindowClassRE = "[REGEXPCLASS:^((Notepad\+*)|(SunAwtFrame)|(TEditorForm)|(WinMergeWindowClassW)|(OpusApp))$]" ; Word: maybe +{ENTER} - see below!
 
 ; von Funktionen als Seiteneffekt änderbare Werte
-$userRequestedNewEditor = False
+Global $userRequestedNewEditor = False
+Global $hNotepad
 
 Func OpenNewEditor()
     $userRequestedNewEditor = True
@@ -20,7 +21,8 @@ Func GetWindowList()
 EndFunc
 
 ; hole oder öffne Notepad Fenster
-Do
+Func GetWindow()
+  Do
     $windowList = GetWindowList()
 	If $windowlist[0][0] = 0 Then
         $hNotepad = 0
@@ -84,19 +86,32 @@ Do
 			EndIf
 	    EndIf
     EndIf
-Until $hNotepad <> 0
+  Until $hNotepad <> 0
+EndFunc
+
+GetWindow()
 
 ; Hauptschleife
 $lastClipContents = ClipGet()
 While True
     $clipContents = ClipGet()
     If Not @error And $clipContents <> $lastClipContents Then
+	   ;ConsoleWrite($clipContents & @CRLF)
+	   ;$lastClipContents = $clipContents
+	   ;ContinueLoop
+
         $hCurrentWin = WinGetHandle("")
         If WinActivate($hNotepad) = 0 Then
             MsgBox($MB_ICONERROR, "WatchClipBoard - Error", "Editor window no more available!" & @CRLF & "Please restart.")
             Exit 1
         EndIf
         Sleep(300)
+		If StringRegExp($clipContents, "^#") Then
+			If MsgBox($MB_YESNO, "WatchClipBoard - User choice", "Text starts with a '#' - paste it?") = $IDNO Then
+                $lastClipContents = $clipContents
+                ContinueLoop
+			EndIf
+		EndIf
 		If Not StringRegExp($clipContents, "^\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d") Then
             Send(StringReplace(_Date_Time_SystemTimeToDateTimeStr(_Date_Time_GetLocalTime(), 1), "/", "-") & " -")
 			If Not StringRegExp($clipContents, "^\s") Then
